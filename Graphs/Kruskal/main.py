@@ -1,3 +1,4 @@
+from re import T
 from cycle_helper import cyclic
 import time
 from igraph import *
@@ -5,8 +6,9 @@ from igraph import *
 EDGES = [
     ('AB', 12),
     ('BC', 9),
-    ('CA', 13),
-    ('CD', 12)
+    ('CD', 13),
+    ('DB', 13),
+    ('DE', 15),
 ]
 
 def creates_cycle(tree: list, edge_candidate: tuple):
@@ -31,21 +33,38 @@ def creates_cycle(tree: list, edge_candidate: tuple):
     
     is_cyclicy = cyclic(graph)
     print(f'this graph {graph} is cyclic: {is_cyclicy}')
-    plot_graph(tree_copy)
+#    plot_graph(tree_copy)
     
-    time.sleep(1)
     return is_cyclicy
 
 
 
 def kruskal(edges: list) -> list:
+    forest = []
     tree = []
     edges_sorted = sorted(edges, key=lambda x: x[1])
-    for edges in edges_sorted:
-        if not creates_cycle(tree, edges):
-            tree.append(edges)
+    for index_edge in range(len(edges_sorted)):
+        
+        edge = edges_sorted[index_edge]
+        next_edge = None
 
-    return tree
+        # check if is there a next edge
+        if index_edge < len(edges_sorted) - 1:
+            next_edge = edges_sorted[1+index_edge]
+
+        # check is current edge has same weight as the next one
+        if next_edge and edge[1] == next_edge[1]:
+            print(f'duplicated weight edges: {edge} {next_edge}')
+            tree_copy = list(tree)
+            tree_copy.append(next_edge)
+
+            forest = forest + kruskal(tree_copy)
+        if not creates_cycle(tree, edge):
+            tree.append(edge)
+
+    forest.append(tree)
+
+    return forest
 
 
 def plot_graph(tree):
@@ -54,9 +73,16 @@ def plot_graph(tree):
         formated_tree.append((node[0][0], node[0][1], node[1]))
 
     graph = Graph.TupleList(formated_tree, weights=True)
+
+    for edge in graph.es:
+        edge['label'] = edge['weight']
     plot(graph)
 
 if __name__ == '__main__':
-    mst = kruskal(EDGES)
-    print('algoritmo finished, ploting mst')
-    plot_graph(mst)
+    plot_graph(EDGES)
+    forest = kruskal(EDGES)
+    print(forest)
+    for mst in forest:
+        print('algoritmo finished, ploting mst')
+        plot_graph(mst)
+    
